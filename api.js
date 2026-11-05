@@ -10,6 +10,18 @@
  */
 var API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
 
+// URL ដែលអានពីរូបអេក្រង់ (អក្សរ I/l និង 0/O មើលមិនច្បាស់) → api.js សាកម្ដងមួយៗ ហើយចងចាំមួយដែលដំណើរការ
+var API_CANDIDATES = [
+  'https://script.google.com/macros/s/AKfycbw9HHM3PnitHR0OJT4LjjACYXW_sqYTjax4ftZGsGXFcxmvfhK4YlxfCXK9TEkv4yf7UA/exec',
+  'https://script.google.com/macros/s/AKfycbw9HHM3PnitHRO0JT4LjjACYXW_sqYTjax4ftZGsGXFcxmvfhK4YlxfCXK9TEkv4yf7UA/exec',
+  'https://script.google.com/macros/s/AKfycbw9HHM3PnitHR00JT4LjjACYXW_sqYTjax4ftZGsGXFcxmvfhK4YlxfCXK9TEkv4yf7UA/exec',
+  'https://script.google.com/macros/s/AKfycbw9HHM3PnitHROOJT4LjjACYXW_sqYTjax4ftZGsGXFcxmvfhK4YlxfCXK9TEkv4yf7UA/exec',
+  'https://script.google.com/macros/s/AKfycbw9HHM3PnitHR0OJT4LjjACYXW_sqYTjax4ftZGsGXFcxmvfhK4YIxfCXK9TEkv4yf7UA/exec',
+  'https://script.google.com/macros/s/AKfycbw9HHM3PnitHRO0JT4LjjACYXW_sqYTjax4ftZGsGXFcxmvfhK4YIxfCXK9TEkv4yf7UA/exec',
+  'https://script.google.com/macros/s/AKfycbw9HHM3PnitHR00JT4LjjACYXW_sqYTjax4ftZGsGXFcxmvfhK4YIxfCXK9TEkv4yf7UA/exec',
+  'https://script.google.com/macros/s/AKfycbw9HHM3PnitHROOJT4LjjACYXW_sqYTjax4ftZGsGXFcxmvfhK4YIxfCXK9TEkv4yf7UA/exec'
+];
+
 (function () {
   'use strict';
   var KEY = 'physicalTestApiUrl';
@@ -67,8 +79,20 @@ var API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
       });
   }
 
+  // ស្វែងរក URL ស្វ័យប្រវត្តិ (ពេលមិនទាន់មាន API_URL)
+  function autoDetect() {
+    if (url() || !window.API_CANDIDATES || !API_CANDIDATES.length) return;
+    var i = 0;
+    (function next() {
+      if (i >= API_CANDIDATES.length) return;            // រកមិនឃើញ → ប្រើប្រអប់បិទភ្ជាប់ដោយដៃ
+      var u = API_CANDIDATES[i++];
+      test(u).then(function () { setUrl(u); location.reload(); }, next);
+    })();
+  }
+
   window.API = {
     call: call, test: test, valid: valid, clean: clean, setUrl: setUrl, url: url,
     configured: function () { return !!url(); }
   };
+  autoDetect();
 })();

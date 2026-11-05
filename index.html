@@ -151,6 +151,9 @@
   .role{font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,.18)}
   .pill{display:inline-block;font-size:12px;font-weight:700;padding:1px 10px;border-radius:999px}
   .pill.on{background:#e3f4ea;color:var(--ok)} .pill.off{background:#f1f3f6;color:var(--muted)}
+  .pill.exp{background:#fdecea;color:var(--danger)}
+  table.list tbody tr.expired{background:#fff7f6;color:#8a94a6}
+  table.list tbody tr.expired:hover{background:#fdeeec}
   .dlg-pad{padding:16px;display:grid;gap:12px}
   dialog.small{width:min(420px,calc(100vw - 32px))}
   /* ---------- Message box ---------- */
@@ -1197,6 +1200,27 @@ var KhLunar = (function(){
   // ---- បញ្ជីព័ត៌មានផ្ទាល់ខ្លួន ----
   var listBox = $('#listBox'), qT, rows = [];
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  // ---- សុពលភាព ៣ ខែ គិតពីថ្ងៃពិនិត្យ ----
+  var VALID_MONTHS = 3;
+  function expiryDate(iso){            // ថ្ងៃដែលអស់សុពលភាព (ថ្ងៃពិនិត្យ + ៣ ខែ)
+    var a = String(iso||'').split('-'); if (a.length !== 3) return null;
+    var y=+a[0], m=+a[1]-1+VALID_MONTHS, d=+a[2];
+    y += Math.floor(m/12); m = m%12;
+    var last = new Date(y, m+1, 0).getDate();      // ឧ. 30 វិច្ឆិកា → 28/29 កុម្ភៈ
+    return new Date(y, m, Math.min(d, last));
+  }
+  function isExpired(iso){
+    var e = expiryDate(iso); if (!e) return false;
+    var t = new Date(); t.setHours(0,0,0,0);
+    return t >= e;
+  }
+  function dmy(dt){ return pad2(dt.getDate())+'/'+pad2(dt.getMonth()+1)+'/'+dt.getFullYear(); }
+  function validCell(iso){
+    var e = expiryDate(iso); if (!e) return '';
+    if (isExpired(iso)) return '<span class="pill exp">អស់សុពលភាព</span>';
+    var last = new Date(e); last.setDate(last.getDate()-1);
+    return '<span class="pill on" title="សុពលភាពដល់ '+dmy(last)+'">ដល់ '+dmy(last)+'</span>';
+  }
   function fmtDate(iso){ if(!iso) return ''; var a=String(iso).split('-'); return a.length===3 ? a[2]+'/'+a[1]+'/'+a[0] : iso; }
   function loadList(){
     listBox.className='empty'; listBox.textContent='កំពុងទាញទិន្នន័យ…'; $('#listCount').textContent='';
@@ -1205,15 +1229,19 @@ var KhLunar = (function(){
       $('#listCount').textContent = rows.length ? rows.length+' នាក់' : '';
       if (!rows.length){ listBox.className='empty'; listBox.textContent = $('#q').value ? 'រកមិនឃើញ' : 'មិនទាន់មានទិន្នន័យ — ចុច "ថ្មី" ដើម្បីបញ្ចូល'; return; }
       listBox.className='';
-      listBox.innerHTML = '<table class="list"><thead><tr><th>ល.រ</th><th>ID</th><th>នាម និងគោត្តនាម</th><th>Name</th><th>ភេទ</th><th>ថ្ងៃខែឆ្នាំកំណើត</th><th>អត្តសញ្ញាណប័ណ្ណ</th><th>ថ្ងៃពិនិត្យ</th><th>បញ្ចូលដោយ</th><th></th></tr></thead><tbody>'+
-        rows.map(function(r,i){return '<tr data-i="'+i+'"><td>'+(i+1)+'</td><td>'+esc(r.id)+'</td><td>'+esc(r.nameKh)+'</td><td>'+esc(r.nameEn)+'</td><td>'+esc(String(r.sex||'').split(' /')[0])+'</td><td>'+esc([r.dobDay,r.dobMonth,r.dobYear].filter(Boolean).join(' '))+'</td><td>'+esc(r.idNo)+'</td><td>'+esc(fmtDate(r.issueDate))+'</td><td>'+esc(r.createdBy||'')+'</td>'+
-          '<td><span class="acts"><button type="button" class="btn-sm" data-act="edit">កែ</button><button type="button" class="btn-sm" data-act="print">បោះពុម្ព</button><button type="button" class="btn-sm danger" data-act="del">លុប</button></span></td></tr>';}).join('')+
+      listBox.innerHTML = '<table class="list"><thead><tr><th>ល.រ</th><th>ID</th><th>នាម និងគោត្តនាម</th><th>Name</th><th>ភេទ</th><th>ថ្ងៃខែឆ្នាំកំណើត</th><th>អត្តសញ្ញាណប័ណ្ណ</th><th>ថ្ងៃពិនិត្យ</th><th>សុពលភាព</th><th>បញ្ចូលដោយ</th><th></th></tr></thead><tbody>'+
+        rows.map(function(r,i){ var ex = isExpired(r.issueDate); return '<tr data-i="'+i+'"'+(ex?' class="expired"':'')+'><td>'+(i+1)+'</td><td>'+esc(r.id)+'</td><td>'+esc(r.nameKh)+'</td><td>'+esc(r.nameEn)+'</td><td>'+esc(String(r.sex||'').split(' /')[0])+'</td><td>'+esc([r.dobDay,r.dobMonth,r.dobYear].filter(Boolean).join(' '))+'</td><td>'+esc(r.idNo)+'</td><td>'+esc(fmtDate(r.issueDate))+'</td><td>'+validCell(r.issueDate)+'</td><td>'+esc(r.createdBy||'')+'</td>'+
+          '<td><span class="acts">'+(ex ? '' : '<button type="button" class="btn-sm" data-act="edit">កែ</button><button type="button" class="btn-sm" data-act="print">បោះពុម្ព</button>')+'<button type="button" class="btn-sm danger" data-act="del">លុប</button></span></td></tr>';}).join('')+
         '</tbody></table>';
     }).catch(function(err){ listBox.className='empty'; listBox.textContent='កំហុស៖ '+err.message; });
   }
   listBox.addEventListener('click', function(e){
     var tr = e.target.closest('tr[data-i]'); if (!tr) return;
     var r = rows[+tr.dataset.i], b = e.target.closest('[data-act]'), act = b ? b.dataset.act : 'edit';
+    if (act !== 'del' && isExpired(r.issueDate)){
+      msgBox({type:'err', title:'អស់សុពលភាព', text:'វិញ្ញាបនប័ត្រ '+r.id+' ('+(r.nameKh||r.nameEn||'')+') ពិនិត្យថ្ងៃ '+fmtDate(r.issueDate)+' បានហួស ៣ ខែហើយ។ មិនអាចកែ ឬបោះពុម្ពបានទេ — សូមចុច "ថ្មី" ដើម្បីពិនិត្យម្ដងទៀត។', cancel:false});
+      return;
+    }
     if (act === 'del'){
       msgBox({type:'warn', title:'លុបទិន្នន័យ', text:'តើអ្នកពិតជាចង់លុប '+(r.nameKh||r.nameEn||'')+' ('+r.id+') មែនទេ? មិនអាចយកមកវិញបានទេ។', ok:'លុប', cancel:'បោះបង់'}).then(function(y){
         if (!y) return;

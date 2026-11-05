@@ -14,15 +14,21 @@ var API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
   'use strict';
   var KEY = 'physicalTestApiUrl';
 
+  // សម្អាត URL ដែលចម្លងមក៖ ដកដកឃ្លា, ?query, #hash, /u/0/, / ខាងចុង
+  function clean(u) {
+    return String(u || '').trim().replace(/[?#].*$/, '').replace(/\/+$/, '')
+      .replace(/script\.google\.com\/(a\/macros\/[^\/]+\/)?u\/\d+\/(?=(a\/)?macros)/, 'script.google.com/$1');
+  }
   function valid(u) {
-    return /^https:\/\/script\.google\.com\/(a\/[^\/]+\/)?macros\/s\/[\w-]+\/exec$/.test(String(u || '').trim());
+    return /^https:\/\/script\.google\.com\/(a\/macros\/[^\/]+\/|a\/[^\/]+\/)?macros\/s\/[\w-]+\/exec$/.test(clean(u))
+        || /^https:\/\/script\.google\.com\/(a\/macros\/[^\/]+\/)?s\/[\w-]+\/exec$/.test(clean(u));
   }
   function url() {
-    if (valid(API_URL)) return API_URL.trim();
-    try { var u = localStorage.getItem(KEY); if (valid(u)) return u; } catch (e) {}
+    if (valid(API_URL)) return clean(API_URL);
+    try { var u = localStorage.getItem(KEY); if (valid(u)) return clean(u); } catch (e) {}
     return '';
   }
-  function setUrl(u) { try { localStorage.setItem(KEY, String(u).trim()); } catch (e) {} }
+  function setUrl(u) { try { localStorage.setItem(KEY, clean(u)); } catch (e) {} }
 
   function post(target, fn, args) {
     return fetch(target, {
@@ -52,7 +58,7 @@ var API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
 
   // ពិនិត្យ URL៖ ហៅ checkSession គ្មាន token → ត្រូវតែឆ្លើយ "AUTH" (មានន័យថា Code.gs ថ្មីដំណើរការ)
   function test(u) {
-    return post(u, 'checkSession', ['']).then(
+    return post(clean(u), 'checkSession', ['']).then(
       function () { return true; },
       function (err) {
         if (/AUTH/.test(err.message)) return true;
@@ -62,7 +68,7 @@ var API_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
   }
 
   window.API = {
-    call: call, test: test, valid: valid, setUrl: setUrl, url: url,
+    call: call, test: test, valid: valid, clean: clean, setUrl: setUrl, url: url,
     configured: function () { return !!url(); }
   };
 })();

@@ -1,6 +1,9 @@
 /**
  * api.js — ភ្ជាប់ទំព័រ GitHub Pages ទៅ Google Apps Script (Google Sheet)
  *
+ * © 2026 YEM SOVATH. All Rights Reserved.
+ * Update : 05/11/2026 5:00 PM  Version : V26.0.0.0
+ *
  * មានវិធី ២ យ៉ាង (ជ្រើសមួយ)៖
  *  ក. ដាក់ Web app URL ខាងក្រោម (ល្អបំផុត — គ្រប់កុំព្យូទ័រប្រើបានភ្លាម)
  *  ខ. ទុកដដែល ហើយបិទភ្ជាប់ URL ក្នុងប្រអប់ "ភ្ជាប់ទៅ Google Sheet" នៅទំព័រ Login
